@@ -20,22 +20,24 @@ func GetRouter() *mux.Router {
 		initRouter()
 	}
 	handlers := controllers.New()
+	// should have a router.HandleFunc("/", handlers.Healthcheck).Methods("POST")
 	// if auth is enabled
 	if config.PrestConf.AuthEnabled {
-		router.HandleFunc("/{database}/auth", handlers.Auth).Methods("POST")
+		router.HandleFunc("/auth/{database}", handlers.Auth).Methods("POST")
 	}
 	router.HandleFunc("/databases", controllers.GetDatabases).Methods("GET")
 	router.HandleFunc("/schemas", controllers.GetSchemas).Methods("GET")
-	router.HandleFunc("/tables", controllers.GetTables).Methods("GET")
-	router.HandleFunc("/_QUERIES/{queriesLocation}/{script}", controllers.ExecuteFromScripts)
-	router.HandleFunc("/{database}/{schema}", controllers.GetTablesByDatabaseAndSchema).Methods("GET")
+	router.HandleFunc("/tables/{database}", controllers.GetTables).Methods("GET")
+	router.HandleFunc("/_QUERIES/{database}/{queriesLocation}/{script}", controllers.ExecuteFromScripts)
+	router.HandleFunc("/schemas/{database}/{schema}", controllers.GetTablesByDatabaseAndSchema).Methods("GET")
 	router.HandleFunc("/show/{database}/{schema}/{table}", controllers.ShowTable).Methods("GET")
 	crudRoutes := mux.NewRouter().PathPrefix("/").Subrouter().StrictSlash(true)
-	crudRoutes.HandleFunc("/{database}/{schema}/{table}", controllers.SelectFromTables).Methods("GET")
-	crudRoutes.HandleFunc("/{database}/{schema}/{table}", controllers.InsertInTables).Methods("POST")
-	crudRoutes.HandleFunc("/batch/{database}/{schema}/{table}", controllers.BatchInsertInTables).Methods("POST")
-	crudRoutes.HandleFunc("/{database}/{schema}/{table}", controllers.DeleteFromTable).Methods("DELETE")
-	crudRoutes.HandleFunc("/{database}/{schema}/{table}", controllers.UpdateTable).Methods("PUT", "PATCH")
+	// add /operations/... to routes, to avoid collision
+	crudRoutes.HandleFunc("/operations/{database}/{schema}/{table}", controllers.SelectFromTables).Methods("GET")
+	crudRoutes.HandleFunc("/operations/{database}/{schema}/{table}", controllers.InsertInTables).Methods("POST")
+	crudRoutes.HandleFunc("/operations/batch/{database}/{schema}/{table}", controllers.BatchInsertInTables).Methods("POST")
+	crudRoutes.HandleFunc("/operations/{database}/{schema}/{table}", controllers.DeleteFromTable).Methods("DELETE")
+	crudRoutes.HandleFunc("/operations/{database}/{schema}/{table}", controllers.UpdateTable).Methods("PUT", "PATCH")
 	router.PathPrefix("/").Handler(negroni.New(
 		middlewares.AccessControl(),
 		middlewares.AuthMiddleware(),

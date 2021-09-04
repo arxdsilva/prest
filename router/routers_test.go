@@ -42,16 +42,16 @@ func TestDefaultRouters(t *testing.T) {
 	}{
 		{"/databases", "GET", http.StatusOK},
 		{"/schemas", "GET", http.StatusOK},
-		{"/_QUERIES/{queriesLocation}/{script}", "GET", http.StatusBadRequest},
-		{"/{database}/{schema}", "GET", http.StatusBadRequest},
+		{"/_QUERIES/{database}/{queriesLocation}/{script}", "GET", http.StatusBadRequest},
+		{"/schemas/{database}/{schema}", "GET", http.StatusBadRequest},
 		{"/show/{database}/{schema}/{table}", "GET", http.StatusBadRequest},
-		{"/{database}/{schema}/{table}", "GET", http.StatusUnauthorized},
-		{"/{database}/{schema}/{table}", "POST", http.StatusUnauthorized},
-		{"/batch/{database}/{schema}/{table}", "POST", http.StatusBadRequest},
-		{"/{database}/{schema}/{table}", "DELETE", http.StatusUnauthorized},
-		{"/{database}/{schema}/{table}", "PUT", http.StatusUnauthorized},
-		{"/{database}/{schema}/{table}", "PATCH", http.StatusUnauthorized},
-		{"/auth", "GET", http.StatusNotFound},
+		{"/operations/{database}/{schema}/{table}", "GET", http.StatusUnauthorized},
+		{"/operations/{database}/{schema}/{table}", "POST", http.StatusUnauthorized},
+		{"/operations/batch/{database}/{schema}/{table}", "POST", http.StatusBadRequest},
+		{"/operations/{database}/{schema}/{table}", "DELETE", http.StatusUnauthorized},
+		{"/operations/{database}/{schema}/{table}", "PUT", http.StatusUnauthorized},
+		{"/operations/{database}/{schema}/{table}", "PATCH", http.StatusUnauthorized},
+		{"/auth/{databasse}", "GET", http.StatusNotFound},
 		{"/", "GET", http.StatusNotFound},
 	}
 	for _, tc := range testCases {
@@ -64,6 +64,6 @@ func TestAuthRouterActive(t *testing.T) {
 	config.PrestConf.AuthEnabled = true
 	initRouter()
 	server := httptest.NewServer(GetRouter())
-	testutils.DoRequest(t, server.URL+"/auth", nil, "GET", http.StatusNotFound, "AuthEnable")
-	testutils.DoRequest(t, server.URL+"/auth", nil, "POST", http.StatusUnauthorized, "AuthEnable")
+	testutils.DoRequest(t, server.URL+"/auth/prest-test", nil, "GET", http.StatusNotFound, "AuthEnable")
+	testutils.DoRequest(t, server.URL+"/auth/prest-test", nil, "POST", http.StatusUnauthorized, "AuthEnable")
 }

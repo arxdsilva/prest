@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"fmt"
+
 	"github.com/prest/prest/adapters"
 	"github.com/prest/prest/config"
 )
@@ -25,5 +27,6 @@ func New() DBHandlers {
 		Adapter: config.PrestConf.Adapter,
 		Config:  *config.PrestConf,
 	}
+	fmt.Printf("%+v\n\n", db)
 	return db
 }

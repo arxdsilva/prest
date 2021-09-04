@@ -60,11 +60,14 @@ const dnf = "database not found"
 
 // Auth controller
 func (h *DBHandlers) Auth(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("%+v\n", h)
 	vars := mux.Vars(r)
 	database := vars["database"]
 	db, ok := h.Get[database]
+	fmt.Printf("Auth db %v ok: %v\n", db, ok)
 	if !ok {
 		http.Error(w, dnf, http.StatusBadRequest)
+		return
 	}
 	login := Login{}
 	switch db.Config.AuthType {
@@ -113,6 +116,7 @@ func basicPasswordCheck(db DB, user, password string) (obj auth.User, err error)
 	by default this endpoint will not be available, it is necessary to activate
 	in the configuration file
 	*/
+	fmt.Printf("%+v\n", db)
 	sc := db.Adapter.Query(getSelectQuery(), user, encrypt(db.Config, password))
 	if sc.Err() != nil {
 		err = sc.Err()
