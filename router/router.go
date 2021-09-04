@@ -19,10 +19,10 @@ func GetRouter() *mux.Router {
 	if router == nil {
 		initRouter()
 	}
-
+	handlers := controllers.New()
 	// if auth is enabled
 	if config.PrestConf.AuthEnabled {
-		router.HandleFunc("/auth", controllers.Auth).Methods("POST")
+		router.HandleFunc("/{database}/auth", handlers.Auth).Methods("POST")
 	}
 	router.HandleFunc("/databases", controllers.GetDatabases).Methods("GET")
 	router.HandleFunc("/schemas", controllers.GetSchemas).Methods("GET")

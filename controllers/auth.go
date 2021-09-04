@@ -11,6 +11,7 @@ import (
 	"time"
 
 	jwt "github.com/form3tech-oss/jwt-go"
+	"github.com/gorilla/mux"
 	"github.com/prest/prest/config"
 	"github.com/prest/prest/controllers/auth"
 )
@@ -55,18 +56,24 @@ func Token(u auth.User) (t string, err error) {
 }
 
 const unf = "user not found"
+const dnf = "database not found"
 
 // Auth controller
-func Auth(w http.ResponseWriter, r *http.Request) {
+func (h *DBHandlers) Auth(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	database := vars["database"]
+	db, ok := h.Get[database]
+	if !ok {
+		http.Error(w, dnf, http.StatusBadRequest)
+	}
 	login := Login{}
-	switch config.PrestConf.AuthType {
+	switch db.Config.AuthType {
 	// TODO: form support
 	case "body":
 		// to use body field authentication
 		dec := json.NewDecoder(r.Body)
 		dec.DisallowUnknownFields()
 		dec.Decode(&login)
-		break
 	case "basic":
 		// to use http basic authentication
 		var ok bool
@@ -75,10 +82,9 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, unf, http.StatusBadRequest)
 			return
 		}
-		break
 	}
 
-	loggedUser, err := basicPasswordCheck(strings.ToLower(login.Username), login.Password)
+	loggedUser, err := basicPasswordCheck(db, strings.ToLower(login.Username), login.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -100,14 +106,14 @@ func Auth(w http.ResponseWriter, r *http.Request) {
 }
 
 // basicPasswordCheck
-func basicPasswordCheck(user, password string) (obj auth.User, err error) {
+func basicPasswordCheck(db DB, user, password string) (obj auth.User, err error) {
 	/**
 	table name, fields (user and password) and encryption must be defined in
 	the configuration file (toml)
 	by default this endpoint will not be available, it is necessary to activate
 	in the configuration file
 	*/
-	sc := config.PrestConf.Adapter.Query(getSelectQuery(), user, encrypt(password))
+	sc := db.Adapter.Query(getSelectQuery(), user, encrypt(db.Config, password))
 	if sc.Err() != nil {
 		err = sc.Err()
 		return
@@ -119,7 +125,6 @@ func basicPasswordCheck(user, password string) (obj auth.User, err error) {
 	if n != 1 {
 		err = fmt.Errorf(unf)
 	}
-
 	return
 }
 
@@ -130,14 +135,12 @@ func getSelectQuery() (query string) {
 }
 
 // encrypt will apply the encryption algorithm to the password
-func encrypt(password string) (encrypted string) {
-	switch config.PrestConf.AuthEncrypt {
+func encrypt(config config.Prest, password string) (encrypted string) {
+	switch config.AuthEncrypt {
 	case "MD5":
 		encrypted = fmt.Sprintf("%x", md5.Sum([]byte(password)))
-		break
 	case "SHA1":
 		encrypted = fmt.Sprintf("%x", sha1.Sum([]byte(password)))
-		break
 	}
 	return
 }
